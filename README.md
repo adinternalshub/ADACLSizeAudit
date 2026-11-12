@@ -138,6 +138,10 @@ ADACLSizeAudit/
 `- LICENSE              MIT
 ```
 
+## Reproduce the problem in a lab
+
+`lab/New-ACLLimitDemo.ps1` builds a test user whose DACL sits at the 65,535-byte ceiling, so you can see the failure (and this tool's report) without waiting for production to hit it. Lab domains only; it has a `-Cleanup` switch. See [`lab/README.md`](lab/README.md).
+
 ## Contributing & security
 
 Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For anything security
