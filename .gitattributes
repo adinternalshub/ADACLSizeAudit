@@ -1,2 +1,24 @@
-# Auto detect text files and perform LF normalization
+# Normalise line endings. Source is edited in Visual Studio on Windows, so
+# C#/project/batch files check out with CRLF; web assets and docs stay LF.
 * text=auto
+
+*.cs       text eol=crlf
+*.csproj   text eol=crlf
+*.sln      text eol=crlf
+*.config   text eol=crlf
+*.template text eol=crlf
+*.cmd      text eol=crlf
+*.bat      text eol=crlf
+*.ps1      text eol=crlf
+
+*.html     text eol=lf
+*.css      text eol=lf
+*.js       text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+
+# Binary assets
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.gif   binary

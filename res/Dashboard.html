@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{
+  --canvas:#f3f2f1;--surface:#ffffff;--line:#e1dfdd;--line-soft:#edebe9;--text:#242424;--muted:#616161;--faint:#8a8886;
+  --accent:#0f6cbd;--accent-bg:#ebf3fc;--accent-line:#b4d6fa;
+  --ok:#0e700e;--ok-bg:#dff6dd;--ok-bar:#54b054;
+  --warn:#8a5a00;--warn-bg:#fff4ce;--warn-bar:#f2a900;
+  --crit:#a4262c;--crit-bg:#fde7e9;--crit-bar:#d13438;
+  --lim:#ffffff;--lim-bg:#7a0010;--lim-bar:#7a0010;
+  --info:#1f4e79;--info-bg:#e6eef7;
+  --radius:4px;--shadow:0 1px 2px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--canvas);color:var(--text);font:13px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+a{color:var(--accent);text-decoration:none}
+h1,h2,h3{margin:0;font-weight:600}
+h2{font-size:15px;margin:0 0 10px}
+h3{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 8px}
+p{margin:0 0 8px}
+button{font:inherit;color:inherit}
+code{font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:12px}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+.small{font-size:12px}
+.nowrap{white-space:nowrap}
+.ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* top bar */
+.top{background:var(--surface);border-bottom:1px solid var(--line);padding:14px 28px 0}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px 24px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mark{width:28px;height:28px;border-radius:6px;background:var(--accent);position:relative;flex:none}
+.brand .mark:before{content:"";position:absolute;left:7px;right:7px;bottom:7px;height:3px;background:#fff;border-radius:2px}
+.brand .mark:after{content:"";position:absolute;left:7px;width:14px;bottom:12px;height:3px;background:rgba(255,255,255,.7);border-radius:2px}
+.brand h1{font-size:18px;letter-spacing:-.01em}
+.brand .target{font-size:13px;color:var(--muted);padding-left:12px;border-left:1px solid var(--line)}
+.top-meta{font-size:12px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;padding-top:6px}
+.top-meta b{color:var(--text);font-weight:600}
+.tabs{display:flex;gap:4px;margin-top:12px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 10px 10px;cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.tab .count{display:inline-block;margin-left:6px;min-width:18px;padding:0 6px;border-radius:9px;background:var(--line-soft);color:var(--muted);font-size:11px;line-height:18px;text-align:center;font-weight:600}
+.tab .count.crit{background:var(--crit-bg);color:var(--crit)}
+.tab .count.warn{background:var(--warn-bg);color:var(--warn)}
+.tab .count.lim{background:var(--lim-bg);color:#fff}
+
+main{padding:20px 28px 60px;max-width:1700px}
+.view{display:none}
+.view.active{display:block}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.grid{display:grid;gap:16px}
+.grid.two{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1100px){.grid.two,.grid.three{grid-template-columns:1fr}}
+
+.verdict{font-size:15px;margin:0 0 16px;padding:12px 16px;border-left:4px solid var(--accent);background:var(--surface);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 var(--radius) var(--radius) 0}
+.verdict.s-lim{border-left-color:var(--lim-bar)}
+.verdict.s-crit{border-left-color:var(--crit-bar)}
+.verdict.s-warn{border-left-color:var(--warn-bar)}
+.verdict.s-ok{border-left-color:var(--ok-bar)}
+
+/* kpi tiles */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media (max-width:1300px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px 12px 16px;position:relative;min-height:84px}
+.kpi:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:var(--line)}
+.kpi.s-ok:before{background:var(--ok-bar)}
+.kpi.s-warn:before{background:var(--warn-bar)}
+.kpi.s-crit:before{background:var(--crit-bar)}
+.kpi.s-lim:before{background:var(--lim-bar)}
+.kpi .label{font-size:12px;color:var(--muted)}
+.kpi .value{font-size:26px;font-weight:600;line-height:1.15;margin:4px 0 2px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12px;color:var(--muted)}
+.kpi.clickable{cursor:pointer}
+.kpi.clickable:hover{border-color:var(--accent-line)}
+
+/* pills */
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;line-height:17px;white-space:nowrap;vertical-align:middle}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.pill.lim{background:var(--lim-bg);color:#fff}
+.pill.info{background:var(--info-bg);color:var(--info)}
+.pill.fail{background:var(--lim-bg);color:#fff}
+.pill.neutral{background:var(--line-soft);color:var(--muted)}
+.flag{display:inline-block;padding:0 6px;border:1px solid var(--line);border-radius:3px;font-size:11px;color:var(--muted);margin-left:4px;line-height:16px;vertical-align:middle;background:#fafafa}
+
+/* capacity bar */
+.cap{display:inline-block;width:110px;height:10px;background:#eceae8;border-radius:2px;position:relative;vertical-align:middle;overflow:hidden}
+.cap .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ok-bar)}
+.cap.warn .fill{background:var(--warn-bar)}
+.cap.crit .fill{background:var(--crit-bar)}
+.cap.lim .fill{background:var(--lim-bar)}
+.cap .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.35)}
+.cap-pct{display:inline-block;width:46px;text-align:right;font-size:12px;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
+
+/* tables */
+table{border-collapse:collapse;width:100%}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:1}
+th.num{text-align:right}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+th .arrow{display:inline-block;width:10px;color:var(--accent);font-size:10px;margin-left:3px}
+td{padding:6px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr:hover td{background:#f8f8f8}
+tbody tr.row-link{cursor:pointer}
+tbody tr.sel td{background:var(--accent-bg)}
+.tbl-wrap{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:var(--radius)}
+.tbl-wrap.wide table{min-width:1100px}
+.obj-name{font-weight:600}
+.obj-dn{font-size:11.5px;color:var(--muted);max-width:520px}
+.bar{display:inline-block;height:8px;background:var(--accent);border-radius:2px;vertical-align:middle;margin-right:6px;min-width:1px}
+.bar.warn{background:var(--warn-bar)}.bar.crit{background:var(--crit-bar)}.bar.lim{background:var(--lim-bar)}
+.bar.soft{background:#9fc3e9}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:12px}
+.toolbar input[type=text],.toolbar select{font:inherit;padding:5px 8px;border:1px solid #8a8886;border-radius:var(--radius);background:#fff;color:var(--text)}
+.toolbar input[type=text]{width:300px}
+.toolbar input[type=text]:focus,.toolbar select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.toolbar label.chk{display:inline-flex;align-items:center;gap:5px;color:var(--muted);cursor:pointer}
+.chips{display:inline-flex;gap:4px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:14px;padding:3px 10px;cursor:pointer;font-size:12px;color:var(--muted)}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip .n{opacity:.8;margin-left:4px}
+.btn{border:1px solid #8a8886;background:#fff;border-radius:var(--radius);padding:5px 12px;cursor:pointer;font-size:13px}
+.btn:hover{background:#f3f2f1}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#0c5aa0}
+.spacer{flex:1}
+.result-count{color:var(--muted);font-size:12px}
+.more{display:block;width:100%;text-align:center;padding:10px;border:1px dashed var(--line);background:#fafafa;cursor:pointer;color:var(--accent);border-radius:var(--radius);margin-top:8px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--radius);background:#fafafa}
+
+/* ladder chart */
+.ladder svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.stack{display:flex;height:14px;border-radius:3px;overflow:hidden;background:#eceae8;margin:8px 0 10px}
+.stack span{display:block;height:100%}
+.stat-list{list-style:none;margin:0;padding:0}
+.stat-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft);gap:12px}
+.stat-list li:last-child{border-bottom:0}
+.stat-list .k{color:var(--muted)}
+.stat-list .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+
+/* definition lists */
+dl.kv{display:grid;grid-template-columns:200px 1fr;gap:6px 16px;margin:0}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;word-break:break-word}
+
+/* drawer */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:var(--surface);border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(0,0,0,.08);transform:translateX(100%);transition:transform .18s ease-out;z-index:20;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+@media (prefers-reduced-motion:reduce){.drawer{transition:none}}
+.drawer-head{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.drawer-head h2{font-size:15px;word-break:break-all;margin:0 0 4px}
+.drawer-body{padding:16px 20px;overflow:auto;flex:1}
+.close{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:2px 6px;border-radius:3px}
+.close:hover{background:var(--line-soft);color:var(--text)}
+.meter{height:14px;background:#eceae8;border-radius:3px;position:relative;margin:10px 0 4px;overflow:hidden}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ok-bar)}
+.meter.warn .fill{background:var(--warn-bar)}.meter.crit .fill{background:var(--crit-bar)}.meter.lim .fill{background:var(--lim-bar)}
+.meter .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.4)}
+.meter-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:14px 0}
+.fact .k{font-size:11.5px;color:var(--muted)}
+.fact .v{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.comp{margin:12px 0}
+.comp .row{display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0}
+.comp .row .k{width:96px;color:var(--muted)}
+.comp .row .b{flex:1;height:8px;background:#eceae8;border-radius:2px;overflow:hidden;display:flex}
+.comp .row .b span{height:100%;display:block}
+.comp .row .v{width:150px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:11px;line-height:1.25}
+.trustee{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-soft);font-size:12px}
+.trustee:last-child{border-bottom:0}
+.trustee .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trustee .bb{width:120px;height:7px;background:#eceae8;border-radius:2px;overflow:hidden}
+.trustee .bb span{display:block;height:100%;background:var(--accent)}
+.trustee .vv{width:90px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.note{background:var(--accent-bg);border:1px solid var(--accent-line);border-radius:var(--radius);padding:10px 12px;font-size:12.5px;margin-top:14px}
+.note.warn{background:var(--warn-bg);border-color:#f0d78c}
+.note.crit{background:var(--crit-bg);border-color:#f1b3b7}
+.brand img.logo{height:30px;width:auto;max-width:160px;display:block}
+.about-head{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.about-head .toolmark{width:56px;height:56px;flex:none}
+.about-head img{max-height:56px;max-width:220px;width:auto;height:auto;display:block}
+.about-head h2{font-size:18px;margin:0 0 2px}
+.about p{font-size:13.5px;line-height:1.55}
+.about ul{margin:0 0 10px 18px;padding:0;font-size:13px;line-height:1.5}
+.about li{margin:3px 0}
+.mailbtn{display:inline-block;background:var(--accent);color:#fff;border-radius:var(--radius);padding:7px 14px;font-weight:600;margin:6px 0 2px}
+.mailbtn:hover{background:#0c5aa0;color:#fff}
+.copyright{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:14px}
+.footer{margin-top:28px;font-size:11.5px;color:var(--faint);border-top:1px solid var(--line);padding-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ok-text{color:var(--ok)}.warn-text{color:var(--warn)}.crit-text{color:var(--crit)}.lim-text{color:var(--lim-bg)}
+.check-detail{max-width:760px;white-space:normal;word-break:break-word;font-size:12.5px}
+.kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 5px;font-size:11px;background:#fafafa;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-row">
+    <div class="brand"><span class="mark" id="hdr-mark" aria-hidden="true"></span><h1 id="hdr-title">AD ACL size audit</h1><span class="target" id="hdr-target"></span></div>
+    <div class="top-meta" id="hdr-meta"></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab active" data-tab="overview" role="tab">Overview</button>
+    <button class="tab" data-tab="objects" role="tab">Objects<span class="count" id="cnt-objects">0</span></button>
+    <button class="tab" data-tab="propagation" role="tab">Propagation<span class="count" id="cnt-containers">0</span></button>
+    <button class="tab" data-tab="trustees" role="tab">Trustees<span class="count" id="cnt-trustees">0</span></button>
+    <button class="tab" data-tab="checks" role="tab">Checks<span class="count" id="cnt-checks">0</span></button>
+    <button class="tab" data-tab="run" role="tab">Run</button>
+    <button class="tab" data-tab="about" role="tab">About</button>
+  </nav>
+</header>
+
+<main>
+  <section class="view active" id="tab-overview">
+    <div class="verdict" id="verdict"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid two">
+      <div class="panel ladder">
+        <h2>Objects by descriptor size</h2>
+        <p class="muted small">Every scanned object placed on the 64 KB scale in 4 KB steps. Bar height uses a logarithmic scale so the few large objects stay visible next to the many small ones.</p>
+        <div id="ladder"></div>
+        <div class="legend"><span><i style="background:var(--ok-bar)"></i>Healthy</span><span><i style="background:var(--warn-bar)"></i>Warning band</span><span><i style="background:var(--crit-bar)"></i>Critical band</span><span><i style="background:var(--lim-bar)"></i>At limit</span></div>
+      </div>
+      <div class="panel">
+        <h2>Status and percentiles</h2>
+        <div id="statusstack"></div>
+        <ul class="stat-list" id="percentiles"></ul>
+      </div>
+    </div>
+    <div class="panel" id="baseline-panel" style="display:none">
+      <h2>Growth since baseline</h2>
+      <div id="baseline"></div>
+    </div>
+    <div class="panel">
+      <h2>Domains</h2>
+      <div class="tbl-wrap" style="max-height:none"><table id="tbl-domains"></table></div>
+    </div>
+    <div class="grid two">
+      <div class="panel">
+        <h2>Object classes</h2>
+        <p class="muted small">Largest descriptor per class. A class whose typical size is high points at inherited ACEs on the containers that hold it.</p>
+        <div class="tbl-wrap" style="max-height:420px"><table id="tbl-classes"></table></div>
+      </div>
+      <div class="panel">
+        <h2>Key objects</h2>
+        <p class="muted small">Domain head, well-known containers and the AdminSDHolder template, read individually. Their inheritable bytes are what every object created directly below them receives.</p>
+        <div class="tbl-wrap" style="max-height:420px"><table id="tbl-keyobjects"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="tab-objects">
+    <div class="panel">
+      <div class="toolbar">
+        <input type="text" id="q" placeholder="Search name, DN, class, owner" aria-label="Search objects">
+        <span class="chips" id="status-chips"></span>
+        <select id="f-domain" aria-label="Domain"></select>
+        <select id="f-class" aria-label="Class"></select>
+        <label class="chk"><input type="checkbox" id="f-container"> containers only</label>
+        <label class="chk"><input type="checkbox" id="f-protected"> inheritance blocked</label>
+        <label class="chk"><input type="checkbox" id="f-admin"> adminCount=1</label>
+        <span class="spacer"></span>
+        <span class="result-count" id="obj-count"></span>
+        <button class="btn" id="btn-csv">Export CSV</button>
+      </div>
+      <p class="muted small" id="obj-scope-note"></p>
+      <div class="tbl-wrap wide"><table id="tbl-objects"></table></div>
+      <button class="more" id="obj-more" style="display:none">Show more</button>
+    </div>
+  </section>
+
+  <section class="view" id="tab-propagation">
+    <div class="panel">
+      <h2>Containers ranked by inheritable payload</h2>
+      <p class="muted small">Inheritable payload is the total size of the ACEs in a container's DACL that are marked to inherit (container or object inherit). A new object created directly below the container receives all of them before a single ACE of its own is added, so this number is the starting size of every future child. Containers above the warning threshold are propagation hotspots: fix them first, because every child inherits the problem.</p>
+      <div class="toolbar">
+        <input type="text" id="q-cont" placeholder="Search container DN" aria-label="Search containers">
+        <select id="f-cont-domain" aria-label="Domain"></select>
+        <label class="chk"><input type="checkbox" id="f-cont-hot"> hotspots only</label>
+        <span class="spacer"></span>
+        <span class="result-count" id="cont-count"></span>
+      </div>
+      <div class="tbl-wrap wide"><table id="tbl-containers"></table></div>
+      <button class="more" id="cont-more" style="display:none">Show more</button>
+    </div>
+  </section>
+
+  <section class="view" id="tab-trustees">
+    <div class="panel">
+      <h2>Trustees that fill the flagged descriptors</h2>
+      <p class="muted small">Aggregated over every object at or above the warning threshold: which security principals own the most ACE bytes. One principal with thousands of bytes across many objects usually means per-object or per-user delegations that should be consolidated into a group with a single inheritable entry higher in the tree.</p>
+      <div class="tbl-wrap"><table id="tbl-trustees"></table></div>
+    </div>
+  </section>
+
+  <section class="view" id="tab-checks">
+    <div class="panel">
+      <div class="toolbar">
+        <h2 style="margin:0">Validation checks</h2>
+        <span class="chips" id="check-chips"></span>
+        <span class="spacer"></span>
+        <span class="result-count" id="check-count"></span>
+      </div>
+      <div class="tbl-wrap" style="max-height:none"><table id="tbl-checks"></table></div>
+    </div>
+  </section>
+
+  <section class="view" id="tab-run">
+    <div class="grid two">
+      <div>
+        <div class="panel"><h2>Target and scope</h2><dl class="kv" id="run-target"></dl></div>
+        <div class="panel"><h2>Thresholds</h2><dl class="kv" id="run-thresholds"></dl></div>
+        <div class="panel"><h2>Environment</h2><dl class="kv" id="run-env"></dl></div>
+        <div class="panel"><h2>Output files</h2><ul class="stat-list" id="run-files"></ul></div>
+      </div>
+      <div>
+        <div class="panel">
+          <h2>How to read this report</h2>
+          <p><b>What is measured.</b> The size in bytes of the self-relative nTSecurityDescriptor as returned by the domain controller: owner, primary group, DACL and (when the account may read it) SACL. This is the value the 64 KB limit applies to. Earlier tooling compared the length of the SDDL text, which can differ from the binary size by a factor of two or more and is not what the directory enforces.</p>
+          <p><b>Why 64 KB.</b> Access control lists in the directory are limited to 64 KB (65,536 bytes; the length field of a single ACL is 16 bits, so one ACL cannot exceed 65,535 bytes). A write that would push an object past the limit is rejected, typically with "The parameter is incorrect", and inheritance propagation cannot finish on that object.</p>
+          <p><b>Where the bytes come from.</b> Each ACE costs roughly 36 to 60 bytes (object ACEs with GUIDs are the large ones). Inherited ACEs are copied into every child, so a container with a large inheritable payload multiplies its problem across the whole subtree. Explicit per-object ACEs add up on individual objects; protected accounts receive the AdminSDHolder DACL on top.</p>
+          <p><b>Headroom and "ACEs left".</b> Headroom is 65,536 minus the measured size. The estimate of remaining ACEs divides the headroom by the object's own average ACE size. Treat it as an order of magnitude, not a promise.</p>
+          <p><b>Typical remediation order.</b> Start with the Propagation tab (largest inheritable payload, most flagged descendants), replace repeated per-principal delegations with group-based ones, remove inheritable ACEs that are no longer needed, and re-run with the JSON snapshot of this run as the baseline to confirm the trend.</p>
+        </div>
+        <div class="panel"><h2>Schema default descriptors</h2><p class="muted small">Size a brand-new object of each class carries before inheritance.</p><div class="tbl-wrap" style="max-height:none"><table id="tbl-schema"></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="tab-about">
+    <div class="grid two">
+      <div>
+        <div class="panel about">
+          <div class="about-head"><span id="about-logo"></span><div><h2 id="about-name"></h2><div class="muted" id="about-tag"></div></div></div>
+          <h3>What this tool does</h3>
+          <p id="about-summary"></p>
+          <h3>How it measures</h3>
+          <ul>
+            <li>Binds over LDAP (System.DirectoryServices.Protocols) to the domain controller you name - never to the logon domain - with signing and sealing or LDAPS, and verifies the required server controls first.</li>
+            <li>Reads the raw <code>nTSecurityDescriptor</code> of every object in scope with the security-descriptor-flags control (owner, group, DACL and, when permitted, SACL) and measures its binary length, which is the value the 64 KB limit applies to.</li>
+            <li>Parses the descriptor header for every object (DACL and SACL size, ACE counts, protection flags) and walks the individual ACEs of flagged objects and containers to attribute bytes to inheritance, ACE type and trustee.</li>
+            <li>Reads the domain head, well-known containers, AdminSDHolder and the schema default descriptors separately, so that the starting size of new objects is known.</li>
+            <li>Writes a self-contained dashboard, a CSV, a JSON snapshot and a run log; the snapshot of one run is the baseline of the next.</li>
+          </ul>
+          <h3>Scope and limits</h3>
+          <p>The tool is read-only and changes nothing in the directory. Sizes are exact for every object whose descriptor the account can read; objects without read access are counted as not measurable and the SACL is included only when the account holds the audit right on the domain controllers. Thresholds are configurable; the 64 KB limit itself is fixed by the directory. Findings should be verified against the object before permissions are changed.</p>
+          <div class="copyright" id="about-copyright"></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel"><h2>Details</h2><dl class="kv" id="about-details"></dl></div>
+        <div class="panel">
+          <h2>Feedback and support</h2>
+          <p class="small muted">Questions, false positives, feature requests or run problems: send the dashboard's Checks tab content or the console log together with the version shown here.</p>
+          <a class="mailbtn" id="about-mail" href="#">Send feedback by e-mail</a>
+          <div class="small muted" id="about-mail-addr"></div>
+        </div>
+        <div class="panel"><h2>Release notes</h2><div class="tbl-wrap" style="max-height:none"><table id="tbl-releases"></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer"><span id="ftr-left"></span><span id="ftr-right"></span></div>
+</main>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div style="min-width:0"><h2 id="dr-title"></h2><div id="dr-sub" class="small muted"></div></div>
+    <button class="close" id="dr-close" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-body" id="dr-body"></div>
+</aside>
+
+<script>
+window.AUDIT = __DATA__;
+</script>
+<script>
+(function () {
+  'use strict';
+  var A = window.AUDIT, M = A.meta, T = M.thresholds, S = M.summary, R = M.run;
+  var OBJ = A.objects || [], CONT = A.containers || [];
+  var HARD = T.hardBytes;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    if (s === null || s === undefined) { return ''; }
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmt(n) {
+    if (n === null || n === undefined) { return '-'; }
+    var s = String(Math.round(n)), out = '', c = 0, i;
+    for (i = s.length - 1; i >= 0; i--) { out = s.charAt(i) + out; c++; if (c % 3 === 0 && i > 0 && s.charAt(i - 1) !== '-') { out = ',' + out; } }
+    return out;
+  }
+  function kb(b, d) { if (b === null || b === undefined) { return '-'; } return (b / 1024).toFixed(d === undefined ? 1 : d) + ' KB'; }
+  function pct(b) { return (b * 100 / HARD); }
+  function bytesOrKb(b) { return b < 1024 ? fmt(b) + ' B' : kb(b); }
+  function cls(st) { return st === 'Limit' ? 'lim' : st === 'Critical' ? 'crit' : st === 'Warning' ? 'warn' : 'ok'; }
+  function label(st) { return st === 'Limit' ? 'At limit' : st; }
+  function pill(st) { return '<span class="pill ' + cls(st) + '">' + esc(label(st)) + '</span>'; }
+  function chkCls(st) { return st === 'OK' ? 'ok' : st === 'Info' ? 'info' : st === 'Warning' ? 'warn' : st === 'Critical' ? 'crit' : 'fail'; }
+  function tickPct(bytes) { return (bytes * 100 / HARD).toFixed(2) + '%'; }
+  function capBar(b, st) {
+    var p = Math.min(100, pct(b));
+    return '<span class="cap ' + cls(st) + '"><span class="fill" style="width:' + p.toFixed(2) + '%"></span>' +
+      '<span class="tick" style="left:' + tickPct(T.warnBytes) + '"></span><span class="tick" style="left:' + tickPct(T.critBytes) + '"></span><span class="tick" style="left:' + tickPct(T.limitBytes) + '"></span></span>' +
+      '<span class="cap-pct">' + p.toFixed(1) + '%</span>';
+  }
+  function hbar(v, max, c) {
+    var w = max > 0 ? Math.max(1, Math.round(v * 120 / max)) : 1;
+    return '<span class="bar ' + (c || '') + '" style="width:' + w + 'px"></span>';
+  }
+  function shortDn(dn) { return dn && dn.length > 110 ? dn.substring(0, 107) + '...' : dn; }
+  function statusOf(b) { return b >= T.limitBytes ? 'Limit' : b >= T.critBytes ? 'Critical' : b >= T.warnBytes ? 'Warning' : 'Healthy'; }
+  function sortBy(arr, key, dir, getter) {
+    var g = getter || function (o) { return o[key]; };
+    arr.sort(function (a, b) {
+      var x = g(a), y = g(b);
+      if (x === null || x === undefined) { x = (typeof y === 'number') ? -Infinity : ''; }
+      if (y === null || y === undefined) { y = (typeof x === 'number') ? -Infinity : ''; }
+      if (typeof x === 'string') { x = x.toLowerCase(); }
+      if (typeof y === 'string') { y = y.toLowerCase(); }
+      if (x < y) { return dir === 'asc' ? -1 : 1; }
+      if (x > y) { return dir === 'asc' ? 1 : -1; }
+      return 0;
+    });
+    return arr;
+  }
+
+  /* ---------- header ---------- */
+  $('hdr-target').innerHTML = esc(R.target) + (S.domains > 1 ? ' &middot; ' + S.domains + ' domains' : '');
+  $('hdr-meta').innerHTML = '<span>Generated <b>' + esc(R.generated) + '</b></span><span>Thresholds <b>' + T.warnKB + ' / ' + T.critKB + ' KB</b> of 64 KB</span><span>Objects <b>' + fmt(S.scanned) + '</b></span><span>' + esc(R.classification) + '</span>';
+  $('ftr-left').textContent = R.tool + ' ' + R.version + ' - ' + R.classification + ' - generated ' + R.generated + ' by ' + R.generatedBy + ' on ' + R.host;
+  $('ftr-right').innerHTML = esc(R.copyright || '') + ' &middot; <a href="mailto:' + esc(R.feedback || '') + '">' + esc(R.feedback || '') + '</a>';
+  var toolMarkSvg = '<svg class="toolmark" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tool mark"><rect x="2" y="2" width="52" height="52" rx="11" fill="#0f6cbd"/><rect x="13" y="16" width="30" height="5" rx="2.5" fill="#fff"/><rect x="13" y="26" width="22" height="5" rx="2.5" fill="#fff" fill-opacity=".85"/><rect x="13" y="36" width="14" height="5" rx="2.5" fill="#fff" fill-opacity=".7"/><rect x="45" y="12" width="2" height="33" rx="1" fill="#fff" fill-opacity=".9"/></svg>';
+  if (R.logo) {
+    $('hdr-mark').outerHTML = '<img class="logo" src="' + R.logo + '" alt="Logo">';
+  }
+
+  /* ---------- about ---------- */
+  (function () {
+    $('about-logo').innerHTML = R.logo ? '<img src="' + R.logo + '" alt="Logo">' : toolMarkSvg;
+    $('about-name').textContent = R.tool + ' ' + R.version;
+    $('about-tag').textContent = (R.title || 'AD ACL size audit') + ' - ' + R.classification + ' - build ' + (R.buildDate || '');
+    $('about-summary').textContent = R.summary || '';
+    $('about-copyright').textContent = R.copyright || '';
+    var det = [
+      ['Tool', R.binary || (R.tool + '.ps1')],
+      ['Version', R.version + ' (build ' + (R.buildDate || '-') + ')'],
+      ['Author', R.author || '-'],
+      ['Team', R.team || '-'],
+      ['Classification', R.classification],
+      ['Copyright', R.copyright || '-'],
+      ['Requirements', R.requirements || '-'],
+      ['Dependencies', 'None. Single executable (.NET Framework 4.0+); no PowerShell modules, no RSAT, no WinRM, no external web resources in the dashboard.'],
+      ['Feedback', '<a href="mailto:' + esc(R.feedback || '') + '">' + esc(R.feedback || '') + '</a>', true],
+      ['This report', 'Generated ' + esc(R.generated) + ' by ' + esc(R.generatedBy) + ' on ' + esc(R.host) + ' for ' + esc(R.target), true]
+    ];
+    var h = '', i;
+    for (i = 0; i < det.length; i++) { h += '<dt>' + esc(det[i][0]) + '</dt><dd>' + (det[i][2] ? det[i][1] : esc(det[i][1])) + '</dd>'; }
+    $('about-details').innerHTML = h;
+    var subject = 'Feedback: ' + R.tool + ' ' + R.version;
+    var body = 'Tool: ' + R.tool + ' ' + R.version + ' (build ' + (R.buildDate || '') + ')\nTarget: ' + R.target + '\nGenerated: ' + R.generated + ' on ' + R.host + '\nObjects scanned: ' + S.scanned + '\n\nFeedback:\n';
+    $('about-mail').href = 'mailto:' + (R.feedback || '') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    $('about-mail-addr').textContent = R.feedback || '';
+    var rn = R.releaseNotes || [], t = '<thead><tr><th>Version</th><th>Date</th><th>Changes</th></tr></thead><tbody>';
+    for (i = 0; i < rn.length; i++) { t += '<tr><td class="nowrap"><b>' + esc(rn[i].version) + '</b></td><td class="nowrap small">' + esc(rn[i].date) + '</td><td class="check-detail">' + esc(rn[i].text) + '</td></tr>'; }
+    $('tbl-releases').innerHTML = t + '</tbody>';
+  })();
+
+  /* ---------- tabs ---------- */
+  var tabs = document.querySelectorAll('.tab');
+  function activate(name) {
+    var i, views = document.querySelectorAll('.view');
+    for (i = 0; i < tabs.length; i++) { tabs[i].className = 'tab' + (tabs[i].getAttribute('data-tab') === name ? ' active' : ''); }
+    for (i = 0; i < views.length; i++) { views[i].className = 'view' + (views[i].id === 'tab-' + name ? ' active' : ''); }
+    if (window.history && window.history.replaceState) { try { window.history.replaceState(null, '', '#' + name); } catch (e) { } }
+  }
+  (function () {
+    var i;
+    for (i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener('click', function () { activate(this.getAttribute('data-tab')); });
+    }
+  })();
+  var flagCount = S.warning + S.critical + S.limit;
+  $('cnt-objects').textContent = fmt(OBJ.length);
+  $('cnt-objects').className = 'count' + (S.limit ? ' lim' : S.critical ? ' crit' : S.warning ? ' warn' : '');
+  $('cnt-containers').textContent = fmt(S.hotContainers);
+  $('cnt-containers').className = 'count' + (S.hotContainers ? ' warn' : '');
+  $('cnt-trustees').textContent = fmt(M.trustees.length);
+  (function () {
+    var i, bad = 0, worst = '';
+    for (i = 0; i < M.checks.length; i++) {
+      var st = M.checks[i].status;
+      if (st === 'Warning' || st === 'Critical' || st === 'Failed') { bad++; }
+      if (st === 'Failed') { worst = 'lim'; } else if (st === 'Critical' && worst !== 'lim') { worst = 'crit'; } else if (st === 'Warning' && !worst) { worst = 'warn'; }
+    }
+    $('cnt-checks').textContent = bad ? bad : M.checks.length;
+    $('cnt-checks').className = 'count' + (worst ? ' ' + worst : '');
+  })();
+
+  /* ---------- overview ---------- */
+  (function () {
+    var v = $('verdict'), txt, sev;
+    if (S.limit > 0) {
+      sev = 's-lim'; txt = '<b>' + fmt(S.limit) + ' object' + (S.limit > 1 ? 's are' : ' is') + ' at the 64 KB limit.</b> ACL writes and inheritance propagation to them fail until their descriptors shrink. ' + fmt(S.critical) + ' more are in the critical band.';
+    } else if (S.critical > 0) {
+      sev = 's-crit'; txt = '<b>' + fmt(S.critical) + ' object' + (S.critical > 1 ? 's are' : ' is') + ' in the critical band</b> (' + T.critKB + ' KB and above). They still accept writes, but a few more inherited ACEs will push them over the limit. ' + fmt(S.warning) + ' object' + (S.warning === 1 ? '' : 's') + ' at warning level.';
+    } else if (S.warning > 0) {
+      sev = 's-warn'; txt = '<b>No object is in the critical band.</b> ' + fmt(S.warning) + ' object' + (S.warning > 1 ? 's exceed' : ' exceeds') + ' the ' + T.warnKB + ' KB warning threshold; the largest is ' + kb(S.max) + '.';
+    } else {
+      sev = 's-ok'; txt = '<b>All ' + fmt(S.scanned) + ' scanned objects are below the ' + T.warnKB + ' KB warning threshold.</b> The largest descriptor is ' + kb(S.max) + ' (' + pct(S.max).toFixed(0) + '% of the limit).';
+    }
+    if (S.hotContainers > 0) { txt += ' ' + fmt(S.hotContainers) + ' container' + (S.hotContainers > 1 ? 's propagate' : ' propagates') + ' more than ' + T.warnKB + ' KB to new children.'; }
+    if (S.unreadable > 0) { txt += ' ' + fmt(S.unreadable) + ' object' + (S.unreadable > 1 ? 's' : '') + ' could not be measured (no read access).'; }
+    v.className = 'verdict ' + sev; v.innerHTML = txt;
+
+    var tiles = [
+      { l: 'Objects scanned', v: fmt(S.scanned), s: S.domains + ' domain' + (S.domains > 1 ? 's' : '') + ', ' + R.durationSec + ' s', c: '' },
+      { l: 'At limit', v: fmt(S.limit), s: '&ge; ' + T.limitKB + ' KB of the 64 KB limit', c: S.limit ? 's-lim' : 's-ok', f: 'Limit' },
+      { l: 'Critical', v: fmt(S.critical), s: '&ge; ' + T.critKB + ' KB', c: S.critical ? 's-crit' : 's-ok', f: 'Critical' },
+      { l: 'Warning', v: fmt(S.warning), s: '&ge; ' + T.warnKB + ' KB', c: S.warning ? 's-warn' : 's-ok', f: 'Warning' },
+      { l: 'Largest descriptor', v: kb(S.max), s: esc(shortDn(S.maxDn)), c: cls(statusOf(S.max)).replace(/^/, 's-'), dn: S.maxDn },
+      { l: 'Not measurable', v: fmt(S.unreadable), s: S.unreadable ? 'no read access to the descriptor' : 'every object returned its descriptor', c: S.unreadable ? 's-warn' : 's-ok' }
+    ];
+    var h = '', i;
+    for (i = 0; i < tiles.length; i++) {
+      var t = tiles[i];
+      h += '<div class="kpi ' + t.c + (t.f || t.dn ? ' clickable' : '') + '"' + (t.f ? ' data-filter="' + t.f + '"' : '') + (t.dn ? ' data-dn="' + esc(t.dn) + '"' : '') + ' title="' + esc(t.dn || '') + '"><div class="label">' + t.l + '</div><div class="value">' + t.v + '</div><div class="sub ellip">' + t.s + '</div></div>';
+    }
+    $('kpis').innerHTML = h;
+    var ks = $('kpis').querySelectorAll('.kpi.clickable');
+    for (i = 0; i < ks.length; i++) {
+      ks[i].addEventListener('click', function () {
+        var f = this.getAttribute('data-filter'), dn = this.getAttribute('data-dn');
+        if (f) { setStatusFilter(f); activate('objects'); }
+        else if (dn) { openByDn(dn); }
+      });
+    }
+  })();
+
+  /* ladder chart */
+  (function () {
+    var hist = M.hist || [], n = 16, i, maxC = 0, counts = [];
+    for (i = 0; i < n; i++) { counts.push(hist[i] || 0); }
+    var over = hist[16] || 0;
+    for (i = 0; i < n; i++) { if (counts[i] > maxC) { maxC = counts[i]; } }
+    if (over > maxC) { maxC = over; }
+    var W = 760, H = 250, padL = 44, padR = 16, padT = 22, padB = 34;
+    var cw = (W - padL - padR) / n, ch = H - padT - padB;
+    var logMax = Math.log(maxC + 1);
+    function zoneX(bytes) { return padL + (bytes / HARD) * (W - padL - padR); }
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Objects by descriptor size">';
+    s += '<rect x="' + zoneX(T.warnBytes).toFixed(1) + '" y="' + padT + '" width="' + (zoneX(T.critBytes) - zoneX(T.warnBytes)).toFixed(1) + '" height="' + ch + '" fill="#fff4ce"/>';
+    s += '<rect x="' + zoneX(T.critBytes).toFixed(1) + '" y="' + padT + '" width="' + (zoneX(T.limitBytes) - zoneX(T.critBytes)).toFixed(1) + '" height="' + ch + '" fill="#fde7e9"/>';
+    s += '<rect x="' + zoneX(T.limitBytes).toFixed(1) + '" y="' + padT + '" width="' + (W - padR - zoneX(T.limitBytes)).toFixed(1) + '" height="' + ch + '" fill="#f7c6cb"/>';
+    var g;
+    for (g = 0; g <= 4; g++) {
+      var yy = padT + ch - (ch * g / 4);
+      s += '<line x1="' + padL + '" y1="' + yy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + yy.toFixed(1) + '" stroke="#e1dfdd" stroke-width="1"/>';
+      var lv = Math.round(Math.exp(logMax * g / 4) - 1);
+      s += '<text x="' + (padL - 6) + '" y="' + (yy + 4).toFixed(1) + '" text-anchor="end" font-size="10" fill="#8a8886">' + fmt(lv) + '</text>';
+    }
+    for (i = 0; i < n; i++) {
+      var lo = i * 4096, c = counts[i];
+      var st = statusOf(lo + 1);
+      var color = st === 'Limit' ? '#7a0010' : st === 'Critical' ? '#d13438' : st === 'Warning' ? '#f2a900' : '#54b054';
+      var hh = logMax > 0 && c > 0 ? Math.max(2, ch * Math.log(c + 1) / logMax) : 0;
+      var x = padL + i * cw + 3, y = padT + ch - hh;
+      if (c > 0) {
+        s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + (cw - 6).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="2" fill="' + color + '"><title>' + (i * 4) + '-' + ((i + 1) * 4) + ' KB: ' + fmt(c) + ' objects</title></rect>';
+        s += '<text x="' + (x + (cw - 6) / 2).toFixed(1) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle" font-size="10" fill="#424242">' + fmt(c) + '</text>';
+      }
+      if (i % 2 === 0) {
+        s += '<text x="' + (padL + i * cw).toFixed(1) + '" y="' + (H - padB + 14) + '" text-anchor="middle" font-size="10" fill="#616161">' + (i * 4) + '</text>';
+      }
+    }
+    s += '<text x="' + (W - padR) + '" y="' + (H - padB + 14) + '" text-anchor="middle" font-size="10" fill="#616161">64</text>';
+    s += '<text x="' + ((padL + W - padR) / 2) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" fill="#8a8886">descriptor size in KB</text>';
+    s += '<line x1="' + (W - padR) + '" y1="' + padT + '" x2="' + (W - padR) + '" y2="' + (padT + ch) + '" stroke="#7a0010" stroke-width="1.5"/>';
+    s += '<text x="' + (W - padR - 4) + '" y="' + (padT - 8) + '" text-anchor="end" font-size="10" fill="#7a0010">64 KB limit</text>';
+    if (over > 0) { s += '<text x="' + (W - padR - 4) + '" y="' + (padT + 12) + '" text-anchor="end" font-size="10" fill="#7a0010">' + fmt(over) + ' at or above</text>'; }
+    s += '</svg>';
+    $('ladder').innerHTML = s;
+  })();
+
+  /* status stack and percentiles */
+  (function () {
+    var tot = Math.max(1, S.scanned), parts = [['Healthy', S.healthy, 'var(--ok-bar)'], ['Warning', S.warning, 'var(--warn-bar)'], ['Critical', S.critical, 'var(--crit-bar)'], ['At limit', S.limit, 'var(--lim-bar)']];
+    var h = '<div class="stack">', i, l = '<ul class="stat-list">';
+    for (i = 0; i < parts.length; i++) {
+      var p = parts[i][1] * 100 / tot;
+      h += '<span style="width:' + p.toFixed(3) + '%;background:' + parts[i][2] + '" title="' + parts[i][0] + ': ' + fmt(parts[i][1]) + '"></span>';
+      l += '<li><span class="k"><i class="legend-dot" style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + parts[i][2] + ';margin-right:6px;vertical-align:-1px"></i>' + parts[i][0] + '</span><span class="v">' + fmt(parts[i][1]) + ' <span class="muted" style="font-weight:400">(' + (parts[i][1] * 100 / tot).toFixed(parts[i][1] && p < 1 ? 2 : 1) + '%)</span></span></li>';
+    }
+    h += '</div>' + l + '</ul>';
+    $('statusstack').innerHTML = h;
+    var pc = [['Median', S.median], ['95th percentile', S.p95], ['99th percentile', S.p99], ['Largest', S.max]];
+    var s = '';
+    for (i = 0; i < pc.length; i++) { s += '<li><span class="k">' + pc[i][0] + '</span><span class="v">' + kb(pc[i][1]) + ' <span class="muted" style="font-weight:400">' + pct(pc[i][1]).toFixed(1) + '%</span></span></li>'; }
+    s += '<li><span class="k">Objects listed in detail</span><span class="v">' + fmt(S.reported) + '</span></li>';
+    s += '<li><span class="k">Objects returning a SACL</span><span class="v">' + fmt(S.withSacl) + '</span></li>';
+    $('percentiles').innerHTML = s;
+  })();
+
+  /* baseline */
+  (function () {
+    var b = M.baseline;
+    if (!b) { return; }
+    $('baseline-panel').style.display = '';
+    var h = '<div class="grid three"><ul class="stat-list"><li><span class="k">Baseline</span><span class="v">' + esc(b.generated) + '</span></li><li><span class="k">Objects compared</span><span class="v">' + fmt(b.compared) + '</span></li><li><span class="k">Grew</span><span class="v ' + (b.grown ? 'warn-text' : '') + '">' + fmt(b.grown) + ' (' + kb(b.growthBytes) + ')</span></li><li><span class="k">Shrank</span><span class="v">' + fmt(b.shrunk) + '</span></li><li><span class="k">Newly above floor</span><span class="v">' + fmt(b.new) + '</span></li></ul>';
+    h += '<div style="grid-column:span 2"><h3>Largest growth</h3>';
+    if (!b.topGrowth || !b.topGrowth.length) { h += '<div class="empty">No listed object grew since the baseline.</div>'; }
+    else {
+      h += '<table><thead><tr><th>Object</th><th class="num">Now</th><th class="num">Growth</th><th>Status</th></tr></thead><tbody>';
+      var i;
+      for (i = 0; i < b.topGrowth.length; i++) { var g = b.topGrowth[i]; h += '<tr class="row-link" data-dn="' + esc(g.dn) + '"><td class="ellip" style="max-width:520px" title="' + esc(g.dn) + '">' + esc(g.dn) + '</td><td class="num">' + kb(g.bytes) + '</td><td class="num warn-text">+' + fmt(g.delta) + ' B</td><td>' + pill(g.status) + '</td></tr>'; }
+      h += '</tbody></table>';
+    }
+    h += '</div></div>';
+    $('baseline').innerHTML = h;
+    bindRowLinks($('baseline'));
+  })();
+
+  /* domains table */
+  (function () {
+    var h = '<thead><tr><th>Domain</th><th>Domain controller</th><th class="num">Objects</th><th class="num">Median</th><th class="num">P95</th><th class="num">P99</th><th class="num">Largest</th><th class="num">Warning</th><th class="num">Critical</th><th class="num">At limit</th><th class="num">Not measurable</th><th class="num">Time</th></tr></thead><tbody>', i;
+    for (i = 0; i < M.domains.length; i++) {
+      var d = M.domains[i];
+      if (!d.connected) {
+        h += '<tr><td><b>' + esc(d.dns) + '</b></td><td colspan="11"><span class="pill fail">Not connected</span> <span class="muted">' + esc((d.errors || []).join('; ')) + '</span></td></tr>';
+        continue;
+      }
+      var parts = [], p;
+      for (p = 0; p < d.partitions.length; p++) { parts.push(d.partitions[p].name + (d.partitions[p].skipped ? ' (skipped)' : d.partitions[p].truncated ? ' (sample)' : '')); }
+      h += '<tr><td><b>' + esc(d.dns) + '</b><div class="small muted">' + esc(parts.join(', ')) + '</div></td><td class="small">' + esc(d.server) + '<div class="muted">' + esc(d.auth) + '</div></td>' +
+        '<td class="num">' + fmt(d.scanned) + '</td><td class="num">' + kb(d.median) + '</td><td class="num">' + kb(d.p95) + '</td><td class="num">' + kb(d.p99) + '</td>' +
+        '<td class="num"><a href="#" class="dn-link" data-dn="' + esc(d.maxDn) + '" title="' + esc(d.maxDn) + '">' + kb(d.max) + '</a></td>' +
+        '<td class="num ' + (d.warning ? 'warn-text' : 'muted') + '">' + fmt(d.warning) + '</td><td class="num ' + (d.critical ? 'crit-text' : 'muted') + '">' + fmt(d.critical) + '</td><td class="num ' + (d.limit ? 'lim-text' : 'muted') + '">' + fmt(d.limit) + '</td>' +
+        '<td class="num ' + (d.unreadable ? 'warn-text' : 'muted') + '">' + fmt(d.unreadable) + '</td><td class="num muted">' + fmt(d.durationSec) + ' s</td></tr>';
+    }
+    h += '</tbody>';
+    $('tbl-domains').innerHTML = h;
+    bindDnLinks($('tbl-domains'));
+  })();
+
+  /* classes table */
+  (function () {
+    var c = M.classes || [], h = '<thead><tr><th>Class</th><th class="num">Objects</th><th class="num">Average</th><th class="num">Largest</th><th class="num">Flagged</th></tr></thead><tbody>', i, n = Math.min(c.length, 25);
+    for (i = 0; i < n; i++) {
+      var k = c[i];
+      h += '<tr><td><code>' + esc(k.name) + '</code></td><td class="num">' + fmt(k.count) + '</td><td class="num">' + kb(k.avg) + '</td><td class="num"><a href="#" class="dn-link" data-dn="' + esc(k.maxDn) + '" title="' + esc(k.maxDn) + '">' + kb(k.max) + '</a> ' + capBar(k.max, statusOf(k.max)) + '</td><td class="num ' + (k.flagged ? 'warn-text' : 'muted') + '">' + fmt(k.flagged) + '</td></tr>';
+    }
+    h += '</tbody>';
+    $('tbl-classes').innerHTML = h;
+    bindDnLinks($('tbl-classes'));
+  })();
+
+  /* key objects */
+  (function () {
+    var h = '<thead><tr><th>Domain</th><th>Object</th><th class="num">Size</th><th class="num">DACL ACEs</th><th class="num">Inheritable</th><th>Status</th></tr></thead><tbody>', i, j, any = false;
+    for (i = 0; i < M.domains.length; i++) {
+      var d = M.domains[i], ks = d.keyObjects || [];
+      for (j = 0; j < ks.length; j++) {
+        var k = ks[j]; any = true;
+        if (k.error || !k.bytes) { h += '<tr><td class="small">' + esc(d.netbios || d.dns) + '</td><td>' + esc(k.name) + '</td><td colspan="4" class="muted small">' + esc(k.error || 'not found') + '</td></tr>'; continue; }
+        h += '<tr><td class="small">' + esc(d.netbios || d.dns) + '</td><td title="' + esc(k.dn) + '">' + esc(k.name) + '</td><td class="num">' + kb(k.bytes) + '</td><td class="num">' + fmt(k.daclAces) + '</td><td class="num" title="' + fmt(k.inheritableAces) + ' inheritable ACEs">' + kb(k.inheritableBytes) + '</td><td>' + pill(k.status) + '</td></tr>';
+      }
+    }
+    h += '</tbody>';
+    $('tbl-keyobjects').innerHTML = any ? h : '';
+    if (!any) { $('tbl-keyobjects').parentNode.innerHTML = '<div class="empty">Key objects were not read.</div>'; }
+  })();
+
+  /* ---------- objects tab ---------- */
+  var objState = { q: '', status: 'All', domain: '', cls: '', cont: false, prot: false, admin: false, sort: 'b', dir: 'desc', shown: 200 };
+  var objCols = [
+    { k: 'st', t: 'Status' },
+    { k: 'n', t: 'Object' },
+    { k: 'c', t: 'Class' },
+    { k: 'd', t: 'Domain' },
+    { k: 'b', t: 'Size', num: true },
+    { k: 'pct', t: 'Capacity', num: false },
+    { k: 'hr', t: 'Headroom', num: true },
+    { k: 'da', t: 'DACL ACEs', num: true },
+    { k: 'sa', t: 'SACL', num: true },
+    { k: 'ib', t: 'Inheritable', num: true },
+    { k: 'wc', t: 'Changed' }
+  ];
+  if (M.baseline) { objCols.push({ k: 'dl', t: 'Growth', num: true }); }
+
+  function setStatusFilter(f) {
+    objState.status = f; objState.shown = 200;
+    renderChips(); renderObjects();
+  }
+  function renderChips() {
+    var counts = { All: OBJ.length, Limit: 0, Critical: 0, Warning: 0, Healthy: 0 }, i;
+    for (i = 0; i < OBJ.length; i++) { counts[OBJ[i].st]++; }
+    var order = ['All', 'Limit', 'Critical', 'Warning', 'Healthy'], h = '';
+    for (i = 0; i < order.length; i++) { h += '<button class="chip' + (objState.status === order[i] ? ' on' : '') + '" data-v="' + order[i] + '">' + label(order[i]) + '<span class="n">' + fmt(counts[order[i]]) + '</span></button>'; }
+    $('status-chips').innerHTML = h;
+    var cs = $('status-chips').querySelectorAll('.chip');
+    for (i = 0; i < cs.length; i++) { cs[i].addEventListener('click', function () { setStatusFilter(this.getAttribute('data-v')); }); }
+  }
+  function fillSelect(id, values, allLabel) {
+    var h = '<option value="">' + allLabel + '</option>', i;
+    for (i = 0; i < values.length; i++) { h += '<option value="' + esc(values[i]) + '">' + esc(values[i]) + '</option>'; }
+    $(id).innerHTML = h;
+  }
+  function uniq(arr, key) {
+    var m = {}, out = [], i;
+    for (i = 0; i < arr.length; i++) { var v = arr[i][key]; if (v && !m[v]) { m[v] = 1; out.push(v); } }
+    out.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+    return out;
+  }
+  function filterObjects() {
+    var out = [], i, q = objState.q.toLowerCase();
+    for (i = 0; i < OBJ.length; i++) {
+      var o = OBJ[i];
+      if (objState.status !== 'All' && o.st !== objState.status) { continue; }
+      if (objState.domain && o.d !== objState.domain) { continue; }
+      if (objState.cls && o.c !== objState.cls) { continue; }
+      if (objState.cont && !o.ct) { continue; }
+      if (objState.prot && !o.pr) { continue; }
+      if (objState.admin && !o.ac) { continue; }
+      if (q) {
+        var hay = (o.n + ' ' + o.dn + ' ' + o.c + ' ' + (o.ow || '')).toLowerCase();
+        if (hay.indexOf(q) < 0) { continue; }
+      }
+      out.push(o);
+    }
+    sortBy(out, objState.sort, objState.dir, objState.sort === 'st' ? function (o) { return o.st === 'Limit' ? 3 : o.st === 'Critical' ? 2 : o.st === 'Warning' ? 1 : 0; } : objState.sort === 'pct' ? function (o) { return o.b; } : null);
+    return out;
+  }
+  var objFiltered = [];
+  function renderObjects() {
+    objFiltered = filterObjects();
+    var h = '<thead><tr>', i;
+    for (i = 0; i < objCols.length; i++) {
+      var c = objCols[i];
+      h += '<th class="sortable' + (c.num ? ' num' : '') + '" data-k="' + c.k + '">' + c.t + '<span class="arrow">' + (objState.sort === c.k ? (objState.dir === 'asc' ? '&#9650;' : '&#9660;') : '') + '</span></th>';
+    }
+    h += '</tr></thead><tbody>';
+    var n = Math.min(objFiltered.length, objState.shown);
+    for (i = 0; i < n; i++) { h += objectRow(objFiltered[i]); }
+    h += '</tbody>';
+    $('tbl-objects').innerHTML = h;
+    if (!objFiltered.length) { $('tbl-objects').innerHTML = h + '<tbody><tr><td colspan="' + objCols.length + '"><div class="empty">No object matches the current filter.</div></td></tr></tbody>'; }
+    $('obj-count').textContent = fmt(n) + ' of ' + fmt(objFiltered.length) + ' shown';
+    $('obj-more').style.display = objFiltered.length > n ? '' : 'none';
+    $('obj-more').textContent = 'Show ' + Math.min(200, objFiltered.length - n) + ' more';
+    var ths = $('tbl-objects').querySelectorAll('th.sortable');
+    for (i = 0; i < ths.length; i++) {
+      ths[i].addEventListener('click', function () {
+        var k = this.getAttribute('data-k');
+        if (objState.sort === k) { objState.dir = objState.dir === 'asc' ? 'desc' : 'asc'; } else { objState.sort = k; objState.dir = (k === 'n' || k === 'c' || k === 'd' || k === 'st') ? 'asc' : 'desc'; }
+        renderObjects();
+      });
+    }
+    bindRowLinks($('tbl-objects'));
+  }
+  function objectRow(o) {
+    var flags = '';
+    if (o.ct) { flags += '<span class="flag" title="Container: its inheritable ACEs are copied to every child">container</span>'; }
+    if (o.pr) { flags += '<span class="flag" title="Inheritance from the parent is blocked on this object">blocked inheritance</span>'; }
+    if (o.ac) { flags += '<span class="flag" title="adminCount=1: the DACL is re-applied from AdminSDHolder">adminCount</span>'; }
+    if (!o.v) { flags += '<span class="flag" style="color:var(--crit)" title="' + esc(o.nt) + '">malformed</span>'; }
+    var aces = o.ex !== null && o.ex !== undefined ? fmt(o.da) + ' <span class="muted small">(' + fmt(o.ex) + ' explicit / ' + fmt(o.ih) + ' inherited)</span>' : fmt(o.da);
+    var h = '<tr class="row-link" data-dn="' + esc(o.dn) + '"><td>' + pill(o.st) + '</td>' +
+      '<td><div class="obj-name">' + esc(o.n) + flags + '</div><div class="obj-dn ellip" title="' + esc(o.dn) + '">' + esc(o.dn) + '</div></td>' +
+      '<td><code>' + esc(o.c) + '</code></td><td class="small">' + esc(o.d) + (o.p !== 'Domain' ? '<div class="muted">' + esc(o.p) + '</div>' : '') + '</td>' +
+      '<td class="num"><b>' + kb(o.b) + '</b><div class="muted small">' + fmt(o.b) + ' B</div></td>' +
+      '<td class="nowrap">' + capBar(o.b, o.st) + '</td>' +
+      '<td class="num">' + kb(o.hr) + (o.est !== null && o.est !== undefined ? '<div class="muted small">~' + fmt(o.est) + ' ACEs</div>' : '') + '</td>' +
+      '<td class="num">' + aces + '</td><td class="num">' + (o.sb ? fmt(o.sa) + ' <span class="muted small">' + bytesOrKb(o.sb) + '</span>' : '<span class="muted">-</span>') + '</td>' +
+      '<td class="num">' + (o.ib !== null && o.ib !== undefined ? kb(o.ib) + '<div class="muted small">' + fmt(o.ia) + ' ACEs</div>' : '<span class="muted">-</span>') + '</td>' +
+      '<td class="small nowrap">' + esc(o.wc) + '</td>';
+    if (M.baseline) { h += '<td class="num ' + (o.dl > 0 ? 'warn-text' : o.dl < 0 ? 'ok-text' : 'muted') + '">' + (o.dl === null || o.dl === undefined ? 'new' : (o.dl > 0 ? '+' : '') + fmt(o.dl) + ' B') + '</td>'; }
+    return h + '</tr>';
+  }
+  function bindRowLinks(root) {
+    var rows = root.querySelectorAll('tr.row-link'), i;
+    for (i = 0; i < rows.length; i++) { rows[i].addEventListener('click', function () { openByDn(this.getAttribute('data-dn'), this); }); }
+  }
+  function bindDnLinks(root) {
+    var ls = root.querySelectorAll('.dn-link'), i;
+    for (i = 0; i < ls.length; i++) { ls[i].addEventListener('click', function (e) { e.preventDefault(); openByDn(this.getAttribute('data-dn')); }); }
+  }
+  renderChips();
+  fillSelect('f-domain', uniq(OBJ, 'd'), 'All domains');
+  fillSelect('f-class', uniq(OBJ, 'c'), 'All classes');
+  $('q').addEventListener('input', function () { objState.q = this.value; objState.shown = 200; renderObjects(); });
+  $('f-domain').addEventListener('change', function () { objState.domain = this.value; objState.shown = 200; renderObjects(); });
+  $('f-class').addEventListener('change', function () { objState.cls = this.value; objState.shown = 200; renderObjects(); });
+  $('f-container').addEventListener('change', function () { objState.cont = this.checked; renderObjects(); });
+  $('f-protected').addEventListener('change', function () { objState.prot = this.checked; renderObjects(); });
+  $('f-admin').addEventListener('change', function () { objState.admin = this.checked; renderObjects(); });
+  $('obj-more').addEventListener('click', function () { objState.shown += 200; renderObjects(); });
+  $('obj-scope-note').textContent = 'Listed: every object of ' + T.floorKB + ' KB or more plus the ' + T.topN + ' largest objects overall (' + fmt(OBJ.length) + ' of ' + fmt(S.scanned) + ' scanned). Click a row for the breakdown.';
+  renderObjects();
+
+  $('btn-csv').addEventListener('click', function () {
+    var cols = ['Status', 'Name', 'Class', 'Domain', 'Partition', 'DistinguishedName', 'Bytes', 'KB', 'PercentOfLimit', 'HeadroomBytes', 'DaclBytes', 'DaclAces', 'ExplicitAces', 'InheritedAces', 'SaclBytes', 'SaclAces', 'InheritableBytes', 'InheritableAces', 'EstimatedAcesLeft', 'InheritanceBlocked', 'AdminCount', 'IsContainer', 'WhenChanged', 'Owner', 'GrowthBytes'];
+    var lines = [cols.join(',')], i;
+    function q(v) { if (v === null || v === undefined) { return ''; } v = String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    for (i = 0; i < objFiltered.length; i++) {
+      var o = objFiltered[i];
+      lines.push([label(o.st), q(o.n), q(o.c), q(o.d), q(o.p), q(o.dn), o.b, (o.b / 1024).toFixed(2), o.pct, o.hr, o.db, o.da, q(o.ex), q(o.ih), o.sb, o.sa, q(o.ib), q(o.ia), q(o.est), o.pr, o.ac, o.ct, q(o.wc), q(o.ow), q(o.dl)].join(','));
+    }
+    var text = '\uFEFF' + lines.join('\r\n');
+    var name = 'ADACLSizeAudit_' + (R.target || 'export').replace(/[^A-Za-z0-9._-]/g, '_') + '_objects.csv';
+    try {
+      var blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+      if (window.navigator && window.navigator.msSaveBlob) { window.navigator.msSaveBlob(blob, name); return; }
+      var a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(function () { document.body.removeChild(a); window.URL.revokeObjectURL(a.href); }, 500);
+    } catch (e) {
+      window.prompt('Copy the CSV content:', text);
+    }
+  });
+
+  /* ---------- propagation tab ---------- */
+  var contState = { q: '', domain: '', hot: false, shown: 200 };
+  fillSelect('f-cont-domain', uniq(CONT, 'd'), 'All domains');
+  function renderContainers() {
+    var out = [], i, q = contState.q.toLowerCase();
+    for (i = 0; i < CONT.length; i++) {
+      var c = CONT[i];
+      if (contState.domain && c.d !== contState.domain) { continue; }
+      if (contState.hot && !(c.ib >= T.warnBytes)) { continue; }
+      if (q && c.dn.toLowerCase().indexOf(q) < 0) { continue; }
+      out.push(c);
+    }
+    var maxIb = out.length ? out[0].ib || 1 : 1;
+    var userBase = T.userDefaultSdBytes || 1700;
+    var h = '<thead><tr><th>Container</th><th>Domain</th><th class="num">Own size</th><th class="num">Inheritable payload</th><th class="num">Inheritable ACEs</th><th class="num">New user would start at</th><th class="num">Flagged below</th><th>Status</th></tr></thead><tbody>';
+    var n = Math.min(out.length, contState.shown);
+    for (i = 0; i < n; i++) {
+      var c = out[i], proj = (c.ib || 0) + userBase, ps = statusOf(proj), pc = cls(c.ib >= T.critBytes ? 'Critical' : c.ib >= T.warnBytes ? 'Warning' : 'Healthy');
+      h += '<tr class="row-link" data-dn="' + esc(c.dn) + '"><td><div class="obj-name">' + esc(c.n) + (c.pr ? '<span class="flag">blocked inheritance</span>' : '') + '</div><div class="obj-dn ellip" title="' + esc(c.dn) + '">' + esc(c.dn) + '</div></td>' +
+        '<td class="small">' + esc(c.d) + '</td><td class="num">' + kb(c.b) + '</td>' +
+        '<td class="num nowrap">' + hbar(c.ib || 0, maxIb, pc) + '<b>' + kb(c.ib) + '</b></td><td class="num">' + fmt(c.ia) + '</td>' +
+        '<td class="num ' + (ps === 'Healthy' ? '' : cls(ps) + '-text') + '" title="inheritable payload + user class default descriptor (' + fmt(userBase) + ' B)">' + kb(proj) + '</td>' +
+        '<td class="num ' + (c.fd ? 'warn-text' : 'muted') + '">' + fmt(c.fd) + '</td><td>' + (c.ib >= T.critBytes ? '<span class="pill crit">Hotspot</span>' : c.ib >= T.warnBytes ? '<span class="pill warn">Hotspot</span>' : pill(c.st)) + '</td></tr>';
+    }
+    h += '</tbody>';
+    $('tbl-containers').innerHTML = out.length ? h : h + '<tbody><tr><td colspan="8"><div class="empty">No container matches the current filter.</div></td></tr></tbody>';
+    $('cont-count').textContent = fmt(n) + ' of ' + fmt(out.length) + ' containers';
+    $('cont-more').style.display = out.length > n ? '' : 'none';
+    bindRowLinks($('tbl-containers'));
+  }
+  $('q-cont').addEventListener('input', function () { contState.q = this.value; contState.shown = 200; renderContainers(); });
+  $('f-cont-domain').addEventListener('change', function () { contState.domain = this.value; contState.shown = 200; renderContainers(); });
+  $('f-cont-hot').addEventListener('change', function () { contState.hot = this.checked; renderContainers(); });
+  $('cont-more').addEventListener('click', function () { contState.shown += 200; renderContainers(); });
+  renderContainers();
+
+  /* ---------- trustees tab ---------- */
+  (function () {
+    var tr = M.trustees || [], i, max = tr.length ? tr[0].bytes : 1;
+    if (!tr.length) { $('tbl-trustees').parentNode.innerHTML = '<div class="empty">No object reached the warning threshold, so there is nothing to attribute.</div>'; return; }
+    var h = '<thead><tr><th>Trustee</th><th>SID</th><th class="num">Bytes in flagged objects</th><th class="num">ACEs</th><th class="num">Objects</th><th class="num">Avg bytes per ACE</th></tr></thead><tbody>';
+    for (i = 0; i < tr.length; i++) {
+      var t = tr[i];
+      h += '<tr><td><b>' + esc(t.name) + '</b></td><td class="small muted"><code>' + esc(t.sid) + '</code></td><td class="num nowrap">' + hbar(t.bytes, max, 'soft') + kb(t.bytes) + '</td><td class="num">' + fmt(t.aces) + '</td><td class="num">' + fmt(t.objects) + '</td><td class="num">' + t.avg + '</td></tr>';
+    }
+    $('tbl-trustees').innerHTML = h + '</tbody>';
+  })();
+
+  /* ---------- checks tab ---------- */
+  var checkFilter = 'All';
+  function renderChecks() {
+    var counts = { All: 0, Failed: 0, Critical: 0, Warning: 0, Info: 0, OK: 0 }, i, list = [];
+    for (i = 0; i < M.checks.length; i++) { counts.All++; counts[M.checks[i].status]++; if (checkFilter === 'All' || M.checks[i].status === checkFilter) { list.push(M.checks[i]); } }
+    var order = ['All', 'Failed', 'Critical', 'Warning', 'Info', 'OK'], h = '';
+    for (i = 0; i < order.length; i++) { if (order[i] !== 'All' && !counts[order[i]]) { continue; } h += '<button class="chip' + (checkFilter === order[i] ? ' on' : '') + '" data-v="' + order[i] + '">' + order[i] + '<span class="n">' + counts[order[i]] + '</span></button>'; }
+    $('check-chips').innerHTML = h;
+    var cs = $('check-chips').querySelectorAll('.chip');
+    for (i = 0; i < cs.length; i++) { cs[i].addEventListener('click', function () { checkFilter = this.getAttribute('data-v'); renderChecks(); }); }
+    var rank = { Failed: 0, Critical: 1, Warning: 2, Info: 3, OK: 4 };
+    list.sort(function (a, b) { return (rank[a.status] - rank[b.status]) || (a.area < b.area ? -1 : a.area > b.area ? 1 : 0) || (a.id < b.id ? -1 : 1); });
+    var t = '<thead><tr><th>Status</th><th>Area</th><th>Check</th><th>Scope</th><th>Detail</th></tr></thead><tbody>';
+    for (i = 0; i < list.length; i++) {
+      var c = list[i];
+      t += '<tr><td><span class="pill ' + chkCls(c.status) + '">' + esc(c.status) + '</span></td><td class="nowrap">' + esc(c.area) + '</td><td><b>' + esc(c.name) + '</b><div class="muted small">' + esc(c.id) + '</div></td><td class="small nowrap">' + esc(c.scope) + '</td><td class="check-detail">' + esc(c.detail) + '</td></tr>';
+    }
+    $('tbl-checks').innerHTML = t + '</tbody>';
+    $('check-count').textContent = list.length + ' check' + (list.length === 1 ? '' : 's');
+  }
+  renderChecks();
+
+  /* ---------- run tab ---------- */
+  (function () {
+    function kv(pairs) { var h = '', i; for (i = 0; i < pairs.length; i++) { h += '<dt>' + esc(pairs[i][0]) + '</dt><dd>' + (pairs[i][2] ? pairs[i][1] : esc(pairs[i][1])) + '</dd>'; } return h; }
+    var doms = [], i;
+    for (i = 0; i < M.domains.length; i++) { doms.push(M.domains[i].dns + ' (' + (M.domains[i].connected ? M.domains[i].server : 'not connected') + ')'); }
+    $('run-target').innerHTML = kv([
+      ['Mode', R.mode === 'Forest' ? 'Forest: ' + R.forest : 'Domain list'],
+      ['Domains', doms.join('; ')],
+      ['Partitions', (R.partitions || []).join(', ')],
+      ['Search base', R.searchBase || '(partition root)'],
+      ['LDAP filter', R.filter],
+      ['Descriptor parts', R.sacl && !R.saclFallback ? 'Owner, group, DACL, SACL' : 'Owner, group, DACL (SACL ' + (R.saclFallback ? 'refused by the server' : 'not requested') + ')'],
+      ['Transport', (R.ldaps ? 'LDAPS' : 'LDAP with signing and sealing') + ', port ' + R.port + ', page size ' + R.pageSize + (R.maxObjects ? ', sample of ' + R.maxObjects + ' objects per partition' : '')],
+      ['Credential', R.credential]
+    ]);
+    $('run-thresholds').innerHTML = kv([
+      ['Hard limit', '64 KB = 65,536 bytes (single ACL max 65,535 bytes)'],
+      ['Warning', T.warnKB + ' KB (' + (T.warnKB * 100 / 64).toFixed(1) + '%)'],
+      ['Critical', T.critKB + ' KB (' + (T.critKB * 100 / 64).toFixed(1) + '%)'],
+      ['At limit', T.limitKB + ' KB and above'],
+      ['Report floor', T.floorKB + ' KB; the ' + T.topN + ' largest objects are always listed'],
+      ['Detailed ACE parse', R.aceDetail === false ? 'skipped (ACE detail off)' : 'objects at warning level and above, and containers of ' + Math.min(T.warnKB, 8) + ' KB or more']
+    ]);
+    $('run-env').innerHTML = kv([
+      ['Generated', R.generated],
+      ['Run as', R.generatedBy],
+      ['Host', R.host],
+      ['Runtime', R.psVersion],
+      ['Tool', R.tool + ' ' + R.version],
+      ['Duration', R.durationSec + ' s (' + fmt(R.rate) + ' objects/s)']
+    ]);
+    var f = R.outputFiles || [], h = '';
+    for (i = 0; i < f.length; i++) { h += '<li><span class="k">' + esc(f[i].type) + '</span><span class="v small" style="font-weight:400;word-break:break-all;text-align:right">' + esc(f[i].path) + '</span></li>'; }
+    $('run-files').innerHTML = h || '<li><span class="k muted">No files recorded</span></li>';
+    var sd = M.schemaDefaults || [], t = '<thead><tr><th>Class</th><th class="num">Default descriptor</th><th class="num">SDDL length</th></tr></thead><tbody>';
+    for (i = 0; i < sd.length; i++) { t += '<tr><td><code>' + esc(sd[i]['class']) + '</code></td><td class="num">' + fmt(sd[i].bytes) + ' B' + (sd[i].method !== 'binary' ? ' <span class="muted small">(estimated)</span>' : '') + '</td><td class="num muted">' + fmt(sd[i].sddlLength) + '</td></tr>'; }
+    $('tbl-schema').innerHTML = sd.length ? t + '</tbody>' : '';
+    if (!sd.length) { $('tbl-schema').parentNode.innerHTML = '<div class="empty">Schema defaults were not read.</div>'; }
+  })();
+
+  /* ---------- drawer ---------- */
+  var byDn = {};
+  (function () { var i; for (i = 0; i < OBJ.length; i++) { byDn[OBJ[i].dn.toLowerCase()] = OBJ[i]; } for (i = 0; i < CONT.length; i++) { if (!byDn[CONT[i].dn.toLowerCase()]) { byDn[CONT[i].dn.toLowerCase()] = CONT[i]; } } })();
+  var selRow = null;
+  function openByDn(dn, rowEl) {
+    var o = byDn[(dn || '').toLowerCase()];
+    if (!o) { return; }
+    if (selRow) { selRow.className = selRow.className.replace(' sel', ''); }
+    if (rowEl) { rowEl.className += ' sel'; selRow = rowEl; }
+    renderDrawer(o);
+  }
+  function renderDrawer(o) {
+    $('dr-title').textContent = o.n;
+    $('dr-sub').innerHTML = pill(o.st) + ' <code>' + esc(o.c) + '</code> &nbsp;' + esc(o.d) + (o.p !== 'Domain' ? ' &middot; ' + esc(o.p) : '');
+    var p = Math.min(100, pct(o.b));
+    var h = '<div class="small" style="word-break:break-all"><code>' + esc(o.dn) + '</code></div>';
+    h += '<div class="meter ' + cls(o.st) + '"><span class="fill" style="width:' + p.toFixed(2) + '%"></span><span class="tick" style="left:' + tickPct(T.warnBytes) + '"></span><span class="tick" style="left:' + tickPct(T.critBytes) + '"></span><span class="tick" style="left:' + tickPct(T.limitBytes) + '"></span></div>';
+    h += '<div class="meter-scale"><span>0</span><span>' + T.warnKB + ' KB</span><span>' + T.critKB + ' KB</span><span>64 KB</span></div>';
+    h += '<div class="facts">' +
+      fact('Descriptor size', kb(o.b, 2) + ' <span class="muted small">' + fmt(o.b) + ' B, ' + o.pct + '%</span>') +
+      fact('Headroom', kb(o.hr, 2) + (o.est !== null && o.est !== undefined ? ' <span class="muted small">~' + fmt(o.est) + ' more ACEs</span>' : '')) +
+      fact('DACL', kb(o.db, 2) + ' <span class="muted small">' + fmt(o.da) + ' ACEs' + (o.avg ? ', avg ' + o.avg + ' B' : '') + '</span>') +
+      fact('SACL', o.sb ? bytesOrKb(o.sb) + ' <span class="muted small">' + fmt(o.sa) + ' ACEs</span>' : '<span class="muted">none returned</span>') +
+      fact('Inheritance from parent', o.pr ? '<span class="crit-text">blocked</span>' : 'allowed') +
+      fact('Owner', o.ow ? '<span class="small">' + esc(o.ow) + '</span>' : '-') +
+      fact('Last changed', o.wc || '-') +
+      fact('adminCount', o.ac ? '<span class="warn-text">1 (AdminSDHolder applies)</span>' : 'not set') +
+      '</div>';
+    if (o.ex !== null && o.ex !== undefined) {
+      var tot = Math.max(1, o.da);
+      h += '<div class="comp"><h3>DACL composition</h3>' +
+        comp('Origin', [[o.ex, 'var(--accent)', 'explicit'], [o.ih, '#9fc3e9', 'inherited']], tot) +
+        comp('Effect', [[o.al, 'var(--ok-bar)', 'allow'], [o.dy, 'var(--crit-bar)', 'deny']], tot) +
+        comp('Shape', [[o.oa, '#8764b8', 'object ACEs'], [o.da - o.oa, '#c7c0dd', 'standard']], tot) +
+        comp('Propagates on', [[o.ia, 'var(--warn-bar)', 'inheritable'], [o.da - o.ia, '#eceae8', 'this object only']], tot) +
+        '</div>';
+      h += '<div class="facts">' + fact('Inheritable payload', kb(o.ib, 2) + ' <span class="muted small">' + fmt(o.ia) + ' ACEs' + (o.ct ? ', inherited by every new child' : '') + '</span>') + fact('Largest ACE', fmt(o.la) + ' B') + (o.ct ? fact('Flagged objects below', fmt(o.fd)) : '') + (o.tr ? fact('Parse', '<span class="crit-text">ACE list truncated</span>') : '') + '</div>';
+    } else {
+      h += '<p class="muted small">Detailed ACE breakdown is collected for objects at warning level and above and for containers.</p>';
+    }
+    if (o.ts && o.ts.length) {
+      var i, mx = o.ts[0].b || 1;
+      h += '<h3>Trustees by bytes in this DACL</h3>';
+      for (i = 0; i < o.ts.length; i++) { h += '<div class="trustee"><span class="nm" title="' + esc(o.ts[i].n) + '">' + esc(o.ts[i].n) + '</span><span class="bb"><span style="width:' + Math.max(2, Math.round(o.ts[i].b * 100 / mx)) + '%"></span></span><span class="vv">' + fmt(o.ts[i].b) + ' B / ' + fmt(o.ts[i].c) + '</span></div>'; }
+    }
+    if (M.baseline) { h += '<div class="facts">' + fact('Since baseline', o.dl === null || o.dl === undefined ? 'not in baseline' : (o.dl > 0 ? '<span class="warn-text">+' : o.dl < 0 ? '<span class="ok-text">' : '<span>') + fmt(o.dl) + ' B</span>') + '</div>'; }
+    h += meaning(o);
+    $('dr-body').innerHTML = h;
+    $('drawer').className = 'drawer open';
+    $('drawer').setAttribute('aria-hidden', 'false');
+  }
+  function fact(k, v) { return '<div class="fact"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; }
+  function comp(k, segs, tot) {
+    var h = '<div class="row"><span class="k">' + k + '</span><span class="b">', i, lbl = [];
+    for (i = 0; i < segs.length; i++) { h += '<span style="width:' + (Math.max(0, segs[i][0]) * 100 / tot).toFixed(2) + '%;background:' + segs[i][1] + '"></span>'; lbl.push(fmt(segs[i][0]) + ' ' + segs[i][2]); }
+    return h + '</span><span class="v">' + lbl.join(' / ') + '</span></div>';
+  }
+  function meaning(o) {
+    var c = cls(o.st), t;
+    if (o.st === 'Limit') { t = 'This object has no usable headroom. Any change that adds an ACE - a new delegation above it, a new inheritable entry on a parent, an AdminSDHolder update - is rejected, and the inheritance propagator cannot complete on it.'; }
+    else if (o.st === 'Critical') { t = 'This object still accepts changes, but only a few more inherited or explicit ACEs separate it from the limit. Treat it as the next failure.'; }
+    else if (o.st === 'Warning') { t = 'This object is above the warning threshold. It is not an immediate failure; the trend matters, so compare it with the next run.'; }
+    else { t = 'This object is within the healthy range.'; }
+    if (o.ex !== null && o.ex !== undefined && o.da > 0) {
+      if (o.ih > o.ex && !o.pr) { t += ' Most of its DACL is inherited (' + Math.round(o.ih * 100 / o.da) + '%): the fix belongs on the parent containers, not on this object.'; }
+      else if (o.ex >= o.ih) { t += ' Most of its DACL is explicit (' + Math.round(o.ex * 100 / o.da) + '%): the entries were set directly on this object' + (o.ac ? ', or stamped from AdminSDHolder' : '') + '.'; }
+    }
+    if (o.ct && o.ib >= T.warnBytes) { t += ' As a container it passes ' + kb(o.ib) + ' to every new child, so new objects created here start above the warning threshold.'; }
+    return '<div class="note ' + (c === 'ok' ? '' : c) + '">' + t + '</div>';
+  }
+  $('dr-close').addEventListener('click', closeDrawer);
+  function closeDrawer() { $('drawer').className = 'drawer'; $('drawer').setAttribute('aria-hidden', 'true'); if (selRow) { selRow.className = selRow.className.replace(' sel', ''); selRow = null; } }
+  document.addEventListener('keydown', function (e) { if ((e.key === 'Escape' || e.keyCode === 27)) { closeDrawer(); } });
+
+  /* initial tab from hash */
+  (function () {
+    var hsh = (window.location.hash || '').replace('#', '');
+    if (hsh && $('tab-' + hsh)) { activate(hsh); }
+  })();
+})();
+</script>
+</body>
+</html>

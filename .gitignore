@@ -1,0 +1,44 @@
+# ===== Build output =====
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+*.exe
+*.pdb
+*.ilk
+
+# ===== Visual Studio =====
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.rsp
+
+# ===== ReSharper / Rider =====
+_ReSharper*/
+*.DotSettings.user
+.idea/
+
+# ===== NuGet =====
+packages/
+*.nupkg
+
+# ===== Generated at build time (build.cmd copies the template) =====
+ADACLSizeAudit.exe.config
+
+# ===== Tool output (audit reports) - never commit scan results =====
+ADACLSizeAudit_*.html
+ADACLSizeAudit_*.csv
+ADACLSizeAudit_*.json
+ADACLSizeAudit_*_log.txt
+/samples/output/
+
+# ===== OS =====
+Thumbs.db
+Desktop.ini
+.DS_Store
