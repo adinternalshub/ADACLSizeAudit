@@ -20,6 +20,12 @@
 
 ---
 
+## Download
+
+Grab the latest prebuilt `ADACLSizeAudit.exe` from the [**Releases**](https://github.com/adinternalshub/ADACLSizeAudit/releases) page — no build step needed.
+It is a single self-contained executable; copy it to a management workstation and run it.
+Prefer to build from source? See [Build](#build) below.
+
 ## Why this tool exists
 
 Every Active Directory object stores its permissions in the `nTSecurityDescriptor` attribute, and that
