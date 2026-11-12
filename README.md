@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="docs/logo.png" alt="ADACLSizeAudit" width="540">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo.png">
+    <img src="docs/logo.png" alt="ADACLSizeAudit" width="560">
+  </picture>
 </p>
-
-<h1 align="center">ADACLSizeAudit</h1>
 
 <p align="center">
   <b>Proactively audit Active Directory security-descriptor (ACL) sizes against the 64&nbsp;KB limit.</b><br>

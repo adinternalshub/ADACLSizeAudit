@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to attach the built exe to a Release on tag builds
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build with the .NET Framework C# compiler
+        shell: cmd
+        run: build.cmd
+
+      - name: Verify the executable was produced
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'ADACLSizeAudit.exe')) { throw 'ADACLSizeAudit.exe was not produced' }
+          Get-Item 'ADACLSizeAudit.exe' | Format-List Name,Length,LastWriteTime
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ADACLSizeAudit
+          path: |
+            ADACLSizeAudit.exe
+            ADACLSizeAudit.exe.config
+          if-no-files-found: error
+
+      - name: Attach executable to the GitHub Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ADACLSizeAudit.exe
+            ADACLSizeAudit.exe.config
+          generate_release_notes: true

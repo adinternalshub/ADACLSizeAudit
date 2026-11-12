@@ -9,7 +9,9 @@ All notable changes to this project are documented here. This project adheres to
 - Rebranded for [adinternalshub.com](https://adinternalshub.com/): author, About box, dashboard and documentation.
 - About panel now links to the website and GitHub project and offers a "Report an issue" action (replaces the internal feedback e-mail).
 - Added a Visual Studio solution/project (`.sln` / `.csproj`) and `AssemblyInfo` alongside the no-Visual-Studio `build.cmd`.
-- New application icon and logo.
+- New application icon and logo (theme-aware README logo for light/dark GitHub).
+- GitHub Actions workflow that builds `ADACLSizeAudit.exe` and attaches it to tagged releases.
+- Issue templates (bug report, feature request) and a pull-request template.
 
 > No measurement logic changed in this release.
 

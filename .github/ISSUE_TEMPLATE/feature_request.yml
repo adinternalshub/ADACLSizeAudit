@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an idea or improvement for ADACLSizeAudit
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the use case or pain point.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like the tool to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints
+      description: ADACLSizeAudit is intentionally minimal. Please confirm your idea fits.
+      options:
+        - label: It keeps the tool read-only (no writes to the directory).
+        - label: It adds no runtime dependency (no NuGet, RSAT, WinRM, or external web resources).

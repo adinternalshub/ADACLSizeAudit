@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a problem with ADACLSizeAudit
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. **Please do not paste real distinguished names, SIDs or trustee names from a production directory** - redact them first.
+  - type: input
+    id: version
+    attributes:
+      label: ADACLSizeAudit version
+      description: About tab -> "Copy version details", or the headless banner.
+      placeholder: "2.0.1"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Windows version and .NET Framework version.
+      placeholder: "Windows Server 2019, .NET Framework 4.8"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact switches or GUI inputs used (redact any real domain/DN).
+      placeholder: |
+        1. Ran ADACLSizeAudit.exe /domain:... /server:...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log output
+      description: The relevant lines from the run log (redacted). This is automatically formatted as code.
+      render: text
