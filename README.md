@@ -31,7 +31,7 @@ Prefer to build from source? See [Build](#build) below.
 Every Active Directory object stores its permissions in the `nTSecurityDescriptor` attribute, and that
 attribute is **hard-capped at 64 KB** ([Microsoft — AD DS maximum limits](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/active-directory-maximum-limits-scalability)).
 Once an object's descriptor approaches that ceiling, every write that would enlarge the ACL fails —
-usually with the unhelpful *"The parameter is incorrect"* — and inheritance propagation to that object
+with an unhelpful message — in ADUC *"Unable to save permission changes … A constraint violation occurred"* — and inheritance propagation to that object
 stalls. It is a silent problem until the day a delegation or GPO change suddenly cannot be applied.
 
 The common SDDL-string-length check is **not** a valid measure: SDDL text length and real binary size
@@ -55,7 +55,7 @@ explain *why* it is large, so objects can be fixed **before** writes to them sta
 - Windows Server 2008 R2 SP1 or later (or Windows 7 SP1 and later)
 - .NET Framework 4.0 or later
 - LDAP (389) or LDAPS (636) connectivity to the target domain controllers
-- An account with **read** access to the objects in scope. Reading the **SACL** additionally needs the *"Manage auditing and security log"* right on the DCs (the tool falls back to DACL-only automatically if it can't read the SACL).
+- An account with **read** access to the objects in scope. Reading the **SACL** additionally needs the *"Manage auditing and security log"* right on the DCs (from 2.0.2 the tool falls back to DACL-only automatically if it can't read the SACL; on 2.0.1, untick *Include SACL* or add `/nosacl`).
 
 ## Build
 

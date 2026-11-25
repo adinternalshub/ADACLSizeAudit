@@ -73,7 +73,11 @@ Validation: `warn` must be 1–62 KB, `crit` must be greater than `warn` and bel
 ## Permissions
 
 - **Read** on the objects in scope is enough for owner + group + DACL sizes.
-- Reading the **SACL** additionally needs the *"Manage auditing and security log"* right on the DCs. If the
-  account lacks it, the tool logs a warning and continues with DACL-only sizes (a lower bound) — it never fails the run for this.
+- Reading the **SACL** additionally needs the *"Manage auditing and security log"* right on the DCs. Without it,
+  Active Directory does not return an error: it silently leaves `nTSecurityDescriptor` out of the results. From
+  2.0.2 the tool detects this, logs a warning, notes it in the Checks tab (MEA-01) and continues with DACL-only
+  sizes (a lower bound) — it never fails the run for this.
+- **2.0.1 only:** that version did not detect the silent omission and reported every object as "without readable
+  descriptor". Upgrade, or untick *Include SACL* / add `/nosacl`.
 
 The tool is strictly **read-only**: it issues no write, add, modify or delete operation against the directory.

@@ -103,6 +103,17 @@ namespace ADACLSizeAudit
         public int SdFlags; public bool Done; public int Pages; public int Retries; public int Entries;
         public bool SaclDropped;
         public List<string> Errors = new List<string>();
+        readonly bool _wantsSd;
+
+        void DropSacl()
+        {
+            SaclDropped = true;
+            SdFlags = SdFlags & 7;
+            for (int i = _req.Controls.Count - 1; i >= 0; i--)
+                if (_req.Controls[i] is SecurityDescriptorFlagControl) _req.Controls.RemoveAt(i);
+            _req.Controls.Add(new SecurityDescriptorFlagControl((SecurityMasks)SdFlags));
+            Errors.Add("SACL not readable with this account - continuing with owner, group and DACL only.");
+        }
 
         public PagedSearch(LdapConnection conn, string baseDn, string filter, SearchScope scope, string[] attrs, int pageSize, int sdFlags, bool domainScope)
         {
@@ -113,6 +124,7 @@ namespace ADACLSizeAudit
             _req.Controls.Add(_pager);
             SdFlags = sdFlags;
             if (sdFlags > 0) _req.Controls.Add(new SecurityDescriptorFlagControl((SecurityMasks)sdFlags));
+            foreach (string a in attrs) if (string.Equals(a, "nTSecurityDescriptor", StringComparison.OrdinalIgnoreCase)) _wantsSd = true;
             if (domainScope) _req.Controls.Add(new DomainScopeControl());
         }
 
@@ -136,12 +148,7 @@ namespace ADACLSizeAudit
                     if (rc == ResultCode.InsufficientAccessRights && (SdFlags & 8) != 0 && !SaclDropped)
                     {
                         // the account may not read the SACL: retry the same page without it
-                        SaclDropped = true;
-                        SdFlags = SdFlags & 7;
-                        for (int i = _req.Controls.Count - 1; i >= 0; i--)
-                            if (_req.Controls[i] is SecurityDescriptorFlagControl) _req.Controls.RemoveAt(i);
-                        _req.Controls.Add(new SecurityDescriptorFlagControl((SecurityMasks)SdFlags));
-                        Errors.Add("SACL not readable with this account - continuing with owner, group and DACL only.");
+                        DropSacl();
                         continue;
                     }
                     if (rc == ResultCode.SizeLimitExceeded && ex.Response is SearchResponse)
@@ -171,6 +178,18 @@ namespace ADACLSizeAudit
                     Done = true;
                     return empty;
                 }
+            }
+
+            // Active Directory usually does NOT fail the search when the SACL is requested by an account without
+            // "Manage auditing and security log": it silently leaves nTSecurityDescriptor out of every entry.
+            // If a page asked for the SACL and not one entry carries a descriptor, drop the SACL and fetch the
+            // same page again (the paging cookie has not been advanced yet).
+            if ((SdFlags & 8) != 0 && !SaclDropped && _wantsSd && resp.Entries.Count > 0)
+            {
+                bool anySd = false;
+                foreach (SearchResultEntry e in resp.Entries)
+                    if (e.Attributes.Contains("ntsecuritydescriptor")) { anySd = true; break; }
+                if (!anySd) { DropSacl(); return NextPage(); }
             }
 
             Pages++;

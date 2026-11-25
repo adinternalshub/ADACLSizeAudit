@@ -309,6 +309,8 @@ namespace ADACLSizeAudit
                 string sec = (S.UseLdaps || S.EffectivePort == 636) ? "LDAPS " + S.EffectivePort : "LDAP 389 with signing and sealing";
                 AddCheck("CON-01", "Connection", "LDAP bind", CheckStatus.OK, string.Format("Bound to {0} ({1}; {2}; domain functional level {3})", st.ServerUsed, sec, st.AuthMode, st.RootDse.DomainFunctionality), st.Dns);
                 Ok(string.Format("Connected to {0} via {1} ({2})", st.Dns, st.ServerUsed, st.AuthMode));
+                st.SdFlags = S.SdFlags;
+                if ((st.SdFlags & 8) != 0) ProbeSaclAccess(st);
             }
             catch (Exception ex)
             {
@@ -363,7 +365,7 @@ namespace ADACLSizeAudit
             var sw = Stopwatch.StartNew();
             int before = st.Scanned;
             var attrs = new string[] { "nTSecurityDescriptor", "objectClass", "adminCount", "whenChanged" };
-            var cursor = new PagedSearch(st.Session.Connection, plan.Base, S.LdapFilter, SearchScope.Subtree, attrs, S.PageSize, S.SdFlags, plan.DomainScope);
+            var cursor = new PagedSearch(st.Session.Connection, plan.Base, S.LdapFilter, SearchScope.Subtree, attrs, S.PageSize, SdFlagsFor(st), plan.DomainScope);
             string activity = "Scanning " + st.Dns + " [" + plan.Name + "]";
             DateTime lastProgress = DateTime.Now;
 
@@ -533,6 +535,32 @@ namespace ADACLSizeAudit
             }
         }
 
+        /// <summary>
+        /// When the SACL is requested and the account lacks "Manage auditing and security log" on the DC,
+        /// Active Directory does not fail the read: it silently omits nTSecurityDescriptor from every object.
+        /// Read the domain head once; if the descriptor only comes back without the SACL, scan this domain
+        /// with owner, group and DACL only.
+        /// </summary>
+        void ProbeSaclAccess(DomainState st)
+        {
+            try
+            {
+                var attrs = new string[] { "nTSecurityDescriptor" };
+                var full = LdapUtil.BaseRead(st.Session.Connection, st.Nc, attrs, st.SdFlags);
+                if (LdapUtil.GetBytes(full, "nTSecurityDescriptor") != null) return;
+                var dacl = LdapUtil.BaseRead(st.Session.Connection, st.Nc, attrs, st.SdFlags & 7);
+                if (LdapUtil.GetBytes(dacl, "nTSecurityDescriptor") != null)
+                {
+                    st.SdFlags = st.SdFlags & 7;
+                    SaclFallback = true;
+                    Warn(st.Dns + ": the SACL is not readable with this account (no \"Manage auditing and security log\" right on " + st.ServerUsed + "). Measuring owner, group and DACL only; sizes are lower bounds.");
+                }
+            }
+            catch (Exception ex) { Warn(st.Dns + ": SACL access probe failed (" + ex.Message + "); continuing with the requested settings."); }
+        }
+
+        int SdFlagsFor(DomainState st) { return st.SdFlags >= 0 ? st.SdFlags : S.SdFlags; }
+
         // ------------------------------------------------------------------ per-domain checks
 
         void KeyObjectChecks(DomainState st)
@@ -542,7 +570,7 @@ namespace ADACLSizeAudit
             {
                 var info = new KeyObjectInfo { Name = k[0], Dn = k[1] + st.Nc };
                 SearchResultEntry e = null;
-                try { e = LdapUtil.BaseRead(st.Session.Connection, info.Dn, new string[] { "nTSecurityDescriptor" }, S.SdFlags); }
+                try { e = LdapUtil.BaseRead(st.Session.Connection, info.Dn, new string[] { "nTSecurityDescriptor" }, SdFlagsFor(st)); }
                 catch (Exception ex) { info.Error = ex.Message; }
                 if (e != null)
                 {
@@ -793,7 +821,7 @@ namespace ADACLSizeAudit
                 AddCheck("MEA-01", "Measurement", "Descriptor parts measured", s, detail, "Run");
             }
             else if (SaclFallback)
-                AddCheck("MEA-01", "Measurement", "Descriptor parts measured", CheckStatus.Warning, "The server refused the SACL for this account; the scan continued with owner, group and DACL only. Sizes are lower bounds.", "Run");
+                AddCheck("MEA-01", "Measurement", "Descriptor parts measured", CheckStatus.Warning, "The SACL could not be read with this account (no \"Manage auditing and security log\" right on the DCs); the scan continued with owner, group and DACL only. Sizes are lower bounds.", "Run");
             else
                 AddCheck("MEA-01", "Measurement", "Descriptor parts measured", CheckStatus.Info, "SACL not requested: owner, group and DACL only. Sizes are lower bounds.", "Run");
 

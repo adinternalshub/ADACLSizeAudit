@@ -13,8 +13,8 @@ namespace ADACLSizeAudit
         public const string Name = "ADACLSizeAudit";
         public const string Binary = "ADACLSizeAudit.exe";
         public const string Title = "AD ACL Size Audit";
-        public const string Version = "2.0.1";
-        public const string BuildDate = "2026-11-10";
+        public const string Version = "2.0.2";
+        public const string BuildDate = "2026-11-25";
         public const string Classification = "Open source (MIT License)";
         public const string Author = "Jinish Kunjilikkattil";
         public const string Team = "ADInternals Hub";
@@ -27,6 +27,7 @@ namespace ADACLSizeAudit
 
         public static readonly string[][] ReleaseNotes = new string[][]
         {
+            new string[] { "2.0.2", "2026-11-25", "Fix: when the SACL is requested by an account without \"Manage auditing and security log\" on the DC, Active Directory silently omits nTSecurityDescriptor and every object was reported as unreadable. The tool now detects this, falls back to owner, group and DACL, and says so in the Checks tab. ADUC error text corrected to \"A constraint violation occurred\"." },
             new string[] { "2.0.1", "2026-11-10", "First public open-source release under the MIT License; rebranded for adinternalshub.com. No measurement logic changed." },
             new string[] { "2.0.1", "2026-10-28", "Build fix for the Microsoft C# compiler (ambiguous numeric overloads in the JSON writer, CS0121)." },
             new string[] { "2.0.1", "2026-10-28", ".NET application (C# / Windows Forms, .NET Framework 4.0+) for Windows Server 2008 R2 and later; same measurement engine, dashboard and baseline tracking; headless command-line mode; prepared for public open-source release." },
@@ -176,6 +177,7 @@ namespace ADACLSizeAudit
         public int AdminSdHolderBytes; public int AdminCountObjects = -1;
         public int Median; public int P95; public int P99; public int Avg;
         public double DurationSec; public bool Connected;
+        public int SdFlags = -1;   // effective security-descriptor flags for this domain (-1 = not set yet)
 
         public int Flagged { get { return Warning + Critical + Limit; } }
         public void Count(SizeStatus s)

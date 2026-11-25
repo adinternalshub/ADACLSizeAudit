@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.2] — 2026-11-25
+### Fixed
+- **Every object reported as unreadable when "Include SACL" is on and the account lacks "Manage auditing and security log" on the DC.** Active Directory does not fail the read in that case; it silently leaves `nTSecurityDescriptor` out of every entry, so the previous fallback (which only reacted to an *insufficient access rights* error) never fired. The tool now probes the domain head once per domain, falls back to owner, group and DACL when only that returns a descriptor, and also re-reads a page without the SACL if a whole page comes back without descriptors. The Checks tab reports the fallback (MEA-01).
+- Dashboard, README and lab script now quote the error ADUC actually shows at the limit — "Unable to save permission changes … A constraint violation occurred" — instead of "The parameter is incorrect".
+- Documentation (README, USAGE) now explains the SACL fallback and the `/nosacl` switch for 2.0.1 users.
+
+### Changed
+- `lab/New-ACLLimitDemo.ps1` replaced with the lab-validated script used in the article *The 64 KB Wall*: parameter `-DomainDnsName`, binds only to the named domain, creates `OU=ACLLimitDemo`, a disabled `acl-limit-target` and six `acl-limit-grp` groups, and writes the final partial batch so the object stored in AD really is at the wall (reference run: 1,128 ACEs, 65,568 bytes). `lab/README.md` rewritten to match.
+- GitHub releases now take their notes from this changelog.
+
 ## [2.0.1] — 2026-11-10
 ### Changed
 - First **public open-source release** under the MIT License.
